@@ -35,7 +35,7 @@ jobs:
       run: dotnet test apis/poi/tests/UnitTests/UnitTests.csproj --no-build --verbosity normal
 
     - name: Create Issue for failed workflow
-      uses: actions/github-script@0.9.0
+    - uses: actions/github-script@0.9.0
       if: failure()
       with:
         github-token: ${{secrets.GITHUB_TOKEN}}
