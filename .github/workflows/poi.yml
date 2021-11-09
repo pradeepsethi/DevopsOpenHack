@@ -1,12 +1,14 @@
-name: .NET
+name: POI_CI_CD
 
 on:
+  workflow_dispatch:
   push:
     paths:
       - 'apis/poi/**'
     branches: [ dev ]
 #  pull_request:
 #    branches: [ dev ]
+
 
 jobs:
   build:
@@ -17,6 +19,7 @@ jobs:
         dotnet-version: ['3.1.x']
 
     steps:
+    - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
     - uses: actions/checkout@v2
     - name: Setup .NET
       uses: actions/setup-dotnet@v1
