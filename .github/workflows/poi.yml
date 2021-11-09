@@ -27,7 +27,8 @@ jobs:
         dotnet-version: 3.1.x
     - name: Restore dependencies
       run: dotnet restore
+      working-directory: apis/poi/
     - name: Build
-      run: dotnet build --no-restore
+      run: dotnet build apis/poi/poi.sln --no-restore 
     - name: Test
-      run: dotnet test --no-build --verbosity normal
+      run: dotnet test apis/poi/tests/UnitTests/UnitTests.csproj --no-build --verbosity normal
