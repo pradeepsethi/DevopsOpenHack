@@ -32,17 +32,21 @@ jobs:
           uses: azure/login@v1
           with:
             creds: ${{ secrets.AZURE_CREDENTIALS }}
-        - name: Azure CLI script
-          uses: azure/CLI@v1
-          with:
-            azcliversion: 2.0.72
-            inlineScript: |
-              az account set -s 'ee5c1803-9557-417d-ba75-e78e8cfa85c7'
-              az webapp deployment slot swap \
-                -g ${{ secrets.RESOURCE_GROUP }} \
-                -n ${{ secrets.POI_APP_NAME }} \
-                --slot staging \
-                --target-slot production
+        - name: "Slot Swap"
+          run: |
+            az webapp deployment slot swap --name ${{ secrets.POI_APP_NAME }} --resource-group ${{ secrets.RESOURCE_GROUP }} --slot staging --target-slot production
+
+          # - name: Azure CLI script
+          # uses: azure/CLI@v1
+          # with:
+          #   azcliversion: 2.0.72
+          #   inlineScript: |
+          #     az account set -s 'ee5c1803-9557-417d-ba75-e78e8cfa85c7'
+          #     az webapp deployment slot swap \
+          #       -g ${{ secrets.RESOURCE_GROUP }} \
+          #       -n ${{ secrets.POI_APP_NAME }} \
+          #       --slot staging \
+          #       --target-slot production
 
         - name: Create Issue for failed workflow
           uses: actions/github-script@0.9.0
