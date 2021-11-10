@@ -11,7 +11,7 @@ on:
     branches: [main]
 
 jobs:
-  poi-build-and-deploy:
+  user-java-build-and-deploy:
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -34,7 +34,7 @@ jobs:
       working-directory: apis/user-java
     
     - name: Publish to GitHub Packages Apache Maven
-      run: mvn deploy
+      run: mvn clean deploy
       env:
         GITHUB_TOKEN: ${{ github.token }}
       working-directory: apis/user-java
