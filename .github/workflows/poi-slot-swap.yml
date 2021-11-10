@@ -34,7 +34,7 @@ jobs:
         - name: Azure CLI script
           uses: azure/CLI@v1
           with:
-            azcliversion: 2.29.0
+            azcliversion: 1.0.5
             inlineScript: |
               az webapp deployment slot swap `
                 -g ${{ secrets.RESOURCE_GROUP }} `
