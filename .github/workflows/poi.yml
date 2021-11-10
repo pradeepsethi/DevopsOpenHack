@@ -2,47 +2,84 @@ name: POI_CI_CD
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - 'apis/poi/**'
-    branches: [ dev ]
+    push:
+     paths:
+       - "apis/poi/**"
+       - ".github/workflows/poi.yml"
+     branches: [dev]
   pull_request:
-    branches: [ main ]
-
+    branches: [main]
 
 jobs:
-  build:
-
+  poi-build-and-deploy:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        dotnet-version: ['3.1.x']
+        dotnet-version: ["3.1.x"]
 
     steps:
-    - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
-    - uses: actions/checkout@v2
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v1
-      with:
-        dotnet-version: 3.1.x
-    - name: Restore dependencies
-      run: dotnet restore
-      working-directory: apis/poi/
-    - name: Build
-      run: dotnet build apis/poi/poi1.sln --no-restore 
-    - name: Test
-      run: dotnet test apis/poi/tests/UnitTests/UnitTests.csproj --no-build --verbosity normal
+      - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
+      - uses: actions/checkout@v2
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: 3.1.x
+      - name: Restore dependencies
+        run: dotnet restore
+        working-directory: apis/poi/
+      - name: Build
+        run: dotnet build apis/poi/poi.sln --no-restore
+      - name: Test
+        run: dotnet test apis/poi/tests/UnitTests/UnitTests.csproj --no-build --verbosity normal
 
-#    - name: Create Issue for failed workflow
-    - uses: actions/github-script@0.9.0
-      if: failure()
-      with:
-        github-token: ${{secrets.GITHUB_TOKEN}}
-        script: |
-          let body = "${{ env.build_name }} Worflow Failure \n Build Number: ${{ github.run_number }} \n Build Log: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }} \n SHA: [${{ github.sha }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }}) \n";
-          github.issues.create({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            title: "${{ env.build_name }} Workflow ${{ github.run_number }} Failed! ",
-            body: body
-          });
+        # Credentials used to push image to App Service
+      - name: "Login via Azure CLI"
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+        # Credentials used to push image to Container Repository
+      - name: "Build and push image"
+        uses: azure/docker-login@v1
+        with:
+          login-server: ${{ secrets.REGISTRY_LOGIN_SERVER }}
+          username: ${{ secrets.REGISTRY_USERNAME }}
+          password: ${{ secrets.REGISTRY_PASSWORD }}
+      - run: |
+          docker build apis/poi/web -f apis/poi/web/Dockerfile -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/devopsoh/api-poi:${{ github.sha }}
+          docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/devopsoh/api-poi:${{ github.sha }}
+
+      - name: Azure WebApp deploy
+        uses: Azure/webapps-deploy@v2
+        if: success() && github.ref == 'refs/heads/main'
+        with:
+          # Name of the Azure Web App
+          app-name: openhack9tn92xf2poi
+          # Applies to Web Apps(Windows and Linux) and Web App Containers(linux). Multi container scenario not supported. Publish profile (*.publishsettings) file contents with Web Deploy secrets
+          publish-profile: # optional
+          # Enter an existing Slot other than the Production slot
+          slot-name: openhack9tn92xf2poi-staging 
+          # Applies to Web App only: Path to package or folder. *.zip, *.war, *.jar or a folder to deploy
+          package: # optional, default is .
+          # Applies to Web App Containers only: Specify the fully qualified container image(s) name. For example, 'myregistry.azurecr.io/nginx:latest' or 'python:3.7.2-alpine/'. For multi-container scenario multiple container image names can be provided (multi-line separated)
+          images: ${{ secrets.REGISTRY_LOGIN_SERVER }}/devopsoh/api-poi:${{ github.sha }}
+          # Applies to Web App Containers only: Path of the Docker-Compose file. Should be a fully qualified path or relative to the default working directory. Required for multi-container scenario
+          configuration-file: # optional
+          # Enter the start up command. For ex. dotnet run or dotnet run
+          startup-command: # optional
+      
+      # - name: Create Issue for failed workflow
+      - uses: actions/github-script@0.9.0
+        if: failure()
+        with:
+          github-token: ${{secrets.GITHUB_TOKEN}}
+          script: |
+            let body = "${{ env.build_name }} Worflow Failure \n Build Number: ${{ github.run_number }} \n Build Log: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }} \n SHA: [${{ github.sha }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }}) \n";
+            github.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: "${{ env.build_name }} Workflow ${{ github.run_number }} Failed! ",
+              body: body
+            });
+
+
