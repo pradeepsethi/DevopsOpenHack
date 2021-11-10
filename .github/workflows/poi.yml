@@ -5,7 +5,6 @@ on:
   push:
     paths:
       - "apis/poi/**"
-      - ".github/workflows/poi.yml"
     branches: [dev]
   pull_request:
     branches: [main]
@@ -70,19 +69,51 @@ jobs:
           slot-name: staging 
           # Applies to Web App only: Path to package or folder. *.zip, *.war, *.jar or a folder to deploy
           images: ${{ secrets.REGISTRY_LOGIN_SERVER }}/devopsoh/api-poi:${{ github.sha }}
-      
-      # - name: Create Issue for failed workflow
-      - uses: actions/github-script@0.9.0
-        if: failure()
-        with:
-          github-token: ${{secrets.GITHUB_TOKEN}}
-          script: |
-            let body = "${{ env.build_name }} Worflow Failure \n Build Number: ${{ github.run_number }} \n Build Log: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }} \n SHA: [${{ github.sha }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }}) \n";
-            github.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: "${{ env.build_name }} Workflow ${{ github.run_number }} Failed! ",
-              body: body
-            });
+  poi-slot-swap:
+      runs-on: ubuntu-latest
+      needs: poi-deploy-staging
+      steps:
+        - name: Check the deployed service URL
+          uses: jtalk/url-health-check-action@v2
+          with:
+            # Check the following URLs one by one sequentially
+            url: https://openhack9tn92xf2poi-staging.azurewebsites.net/api/healthcheck/poi
+            # Follow redirects, or just report success on 3xx status codes
+            follow-redirect: no # Optional, defaults to "no"
+            # Fail this action after this many failed attempts
+            max-attempts: 5 # Optional, defaults to 1
+            # Delay between retries
+            retry-delay: 10s # Optional, only applicable to max-attempts > 1
+            # Retry all errors, including 404. This option might trigger curl upgrade.
+            retry-all: no # Optional, defaults to "no"
+
+        - name: "Login via Azure CLI"
+          uses: azure/login@v1
+          with:
+            creds: ${{ secrets.AZURE_CREDENTIALS }}
+        - name: Azure CLI script
+          uses: azure/CLI@v1
+          with:
+            azcliversion: 2.29
+            inlineScript: |
+              az webapp deployment slot swap `
+                -g ${{ secrets.RESOURCE_GROUP }} `
+                -n ${{ secrets.POI_APP_NAME }} `
+                --slot staging `
+                --target-slot production
+
+        - name: Create Issue for failed workflow
+        - uses: actions/github-script@0.9.0
+          if: failure()
+          with:
+            github-token: ${{secrets.GITHUB_TOKEN}}
+            script: |
+              let body = "${{ env.build_name }} Worflow Failure \n Build Number: ${{ github.run_number }} \n Build Log: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }} \n SHA: [${{ github.sha }}](https://github.com/${{ github.repository }}/commit/${{ github.sha }}) \n";
+              github.issues.create({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                title: "${{ env.build_name }} Workflow ${{ github.run_number }} Failed! ",
+                body: body
+              });
 
 
