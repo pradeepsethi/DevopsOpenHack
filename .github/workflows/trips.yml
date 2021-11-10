@@ -5,6 +5,7 @@ on:
   push:
     paths:
       - "apis/trips/**"
+      - ".github/workflows/trips.yml"
     branches: [dev]
   pull_request:
     branches: [main]
