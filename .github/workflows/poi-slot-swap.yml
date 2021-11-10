@@ -36,10 +36,10 @@ jobs:
           with:
             azcliversion: 2.0.72
             inlineScript: |
-              az webapp deployment slot swap `
-                -g ${{ secrets.RESOURCE_GROUP }} `
-                -n ${{ secrets.POI_APP_NAME }} `
-                --slot staging `
+              az webapp deployment slot swap 
+                -g ${{ secrets.RESOURCE_GROUP }} 
+                -n ${{ secrets.POI_APP_NAME }} 
+                --slot staging 
                 --target-slot production
 
         - name: Create Issue for failed workflow
