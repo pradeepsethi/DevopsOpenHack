@@ -37,6 +37,7 @@ jobs:
           with:
             azcliversion: 2.0.72
             inlineScript: |
+              az account set --subscription ee5c1803-9557-417d-ba75-e78e8cfa85c7
               az webapp deployment slot swap \
                 -g ${{ secrets.RESOURCE_GROUP }} \
                 -n ${{ secrets.POI_APP_NAME }} \
