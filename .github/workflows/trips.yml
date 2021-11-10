@@ -25,7 +25,7 @@ jobs:
           go-version: 1.16.8
 
       - name: Build
-        run: go run apis/trips/main.go
+        run: go build apis/trips
 
       - name: Test
         run: go test apis/trips/tripgo -run Unit
