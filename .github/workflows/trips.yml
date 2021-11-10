@@ -26,10 +26,10 @@ jobs:
           go-version: 1.16.8
 
       - name: Build
-        run: go get apis/trips/tripsgo
+        run: go get ./apis/trips/tripsgo
 
       - name: Test
-        run: go test apis/trips/tripgo -run Unit
+        run: go test ./apis/trips/tripgo -run Unit
 
         # Credentials used to push image to Container Repository
       - name: "Build and push image"
