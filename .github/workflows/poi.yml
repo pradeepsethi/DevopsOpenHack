@@ -2,10 +2,11 @@ name: POI_CI_CD
 
 on:
   workflow_dispatch:
-  # push:
-  #   paths:
-  #     - "apis/poi/**"
-  #   branches: [dev]
+    push:
+     paths:
+       - "apis/poi/**"
+       - ".github/workflows/poi.yml"
+     branches: [dev]
   pull_request:
     branches: [main]
 
@@ -48,7 +49,26 @@ jobs:
           docker build apis/poi/web -f apis/poi/web/Dockerfile -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/devopsoh/api-poi:${{ github.sha }}
           docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/devopsoh/api-poi:${{ github.sha }}
 
-      #    - name: Create Issue for failed workflow
+      - name: Azure WebApp deploy
+        uses: Azure/webapps-deploy@v2
+        if: success() && github.ref == 'refs/heads/main'
+        with:
+          # Name of the Azure Web App
+          app-name: openhack9tn92xf2poi
+          # Applies to Web Apps(Windows and Linux) and Web App Containers(linux). Multi container scenario not supported. Publish profile (*.publishsettings) file contents with Web Deploy secrets
+          publish-profile: # optional
+          # Enter an existing Slot other than the Production slot
+          slot-name: openhack9tn92xf2poi-staging 
+          # Applies to Web App only: Path to package or folder. *.zip, *.war, *.jar or a folder to deploy
+          package: # optional, default is .
+          # Applies to Web App Containers only: Specify the fully qualified container image(s) name. For example, 'myregistry.azurecr.io/nginx:latest' or 'python:3.7.2-alpine/'. For multi-container scenario multiple container image names can be provided (multi-line separated)
+          images: ${{ secrets.REGISTRY_LOGIN_SERVER }}/devopsoh/api-poi:${{ github.sha }}
+          # Applies to Web App Containers only: Path of the Docker-Compose file. Should be a fully qualified path or relative to the default working directory. Required for multi-container scenario
+          configuration-file: # optional
+          # Enter the start up command. For ex. dotnet run or dotnet run
+          startup-command: # optional
+      
+      # - name: Create Issue for failed workflow
       - uses: actions/github-script@0.9.0
         if: failure()
         with:
@@ -61,3 +81,5 @@ jobs:
               title: "${{ env.build_name }} Workflow ${{ github.run_number }} Failed! ",
               body: body
             });
+
+
