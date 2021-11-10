@@ -2,11 +2,11 @@ name: POI_CI_CD
 
 on:
   workflow_dispatch:
-    push:
-     paths:
-       - "apis/poi/**"
-       - ".github/workflows/poi.yml"
-     branches: [dev]
+  push:
+    paths:
+      - "apis/poi/**"
+      - ".github/workflows/poi.yml"
+    branches: [dev]
   pull_request:
     branches: [main]
 
