@@ -50,6 +50,7 @@ jobs:
 
   poi-deploy-staging:
       runs-on: ubuntu-latest
+      if: success() && github.ref == 'refs/heads/main'
       needs: poi-build-and-test
 
       steps:
@@ -59,9 +60,7 @@ jobs:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
       
       - name: Azure WebApp deploy
-        uses: Azure/webapps-deploy@v2
-        
-        if: success() && github.ref == 'refs/heads/main'
+        uses: Azure/webapps-deploy@v2    
         with:
           # Name of the Azure Web App
           app-name: openhack9tn92xf2poi 
@@ -71,10 +70,12 @@ jobs:
           images: ${{ secrets.REGISTRY_LOGIN_SERVER }}/devopsoh/api-poi:${{ github.sha }}
   poi-slot-swap:
       runs-on: ubuntu-latest
+      if: success() && github.ref == 'refs/heads/main'
       needs: poi-deploy-staging
       steps:
         - name: Check the deployed service URL
           uses: jtalk/url-health-check-action@v2
+
           with:
             # Check the following URLs one by one sequentially
             url: https://openhack9tn92xf2poi-staging.azurewebsites.net/api/healthcheck/poi
