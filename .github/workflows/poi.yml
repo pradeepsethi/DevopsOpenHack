@@ -45,7 +45,8 @@ jobs:
         username: ${{ secrets.REGISTRY_USERNAME }}
         password: ${{ secrets.REGISTRY_PASSWORD }}
     - run: |
-        docker build . -f apis/poi/web/Dockerfile -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/devopsoh/api-poi:${{ github.sha }}
+        working-directory: apis/poi/
+        docker build ./web -f ./web/Dockerfile -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/devopsoh/api-poi:${{ github.sha }}
         docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/devopsoh/api-poi:${{ github.sha }}
 
 #    - name: Create Issue for failed workflow
