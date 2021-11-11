@@ -71,9 +71,10 @@ jobs:
   poi-route-traffic:
       runs-on: ubuntu-latest
       strategy:
+        max-parallel: 1
         matrix:
           traffic: [25, 50, 75, 100]
-      if: success() && github.ref == 'refs/heads/main'
+      if: success() && github.ref == 'refs/heads/dev'
 #      needs: poi-deploy-staging
       steps:
         - name: Check the deployed service URL
@@ -107,7 +108,7 @@ jobs:
 
   poi-swap-slot:
       runs-on: ubuntu-latest
-      if: success() && github.ref == 'refs/heads/main'
+      if: success() && github.ref == 'refs/heads/dev'
       needs: poi-route-traffic
       steps:
         - name: "Login via Azure CLI"
