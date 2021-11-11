@@ -32,8 +32,8 @@ jobs:
           npm install
           npm run build --if-present
           npm run test --if-present --reporter=lcov
-          ls apis/userprofile
-          ls apis/userprofile/tests
+          ls ./
+          ls ./tests
         working-directory: apis/userprofile
 
       - name: Coveralls
