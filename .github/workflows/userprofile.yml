@@ -5,7 +5,7 @@ on:
   push:
     paths:
       - "apis/userprofile/**"
-      - "./github/workflows/userprofile.yml"
+      - ".github/workflows/userprofile.yml"
     branches: [dev]
   pull_request:
     branches: [main]
