@@ -5,6 +5,7 @@ on:
     push:
      paths:
        - "apis/user-java/**"
+       - ".github/workflows/user-java.yml"
      branches: [dev]
   pull_request:
     branches: [main]
