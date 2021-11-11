@@ -85,9 +85,9 @@ jobs:
           uses: azure/login@v1
           with:
             creds: ${{ secrets.AZURE_CREDENTIALS }}
-        - name: "Slot Swap"
+        - name: "Route Traffic to Staging"
           run: |
-            az webapp deployment slot swap --name ${{ secrets.POI_APP_NAME }} --resource-group ${{ secrets.RESOURCE_GROUP }} --slot staging --target-slot production
+           az webapp traffic-routing set --distribution staging=50 --name ${{ secrets.POI_APP_NAME }} --resource-group ${{ secrets.RESOURCE_GROUP }}
 
         - name: Check the deployed service URL
           uses: jtalk/url-health-check-action@v2
@@ -97,10 +97,11 @@ jobs:
             retry-delay: 10s 
             retry-all: false 
 
-        - name: "Rollback Slot"
+        - name: "Route Traffic to Staging"
           if: failure()
           run: |
-            az webapp deployment slot swap --name ${{ secrets.POI_APP_NAME }} --resource-group ${{ secrets.RESOURCE_GROUP }} --slot staging --target-slot production
+            az webapp traffic-routing set --distribution staging=0 --name ${{ secrets.POI_APP_NAME }} --resource-group ${{ secrets.RESOURCE_GROUP }}
+
 
         - name: Create Issue for failed workflow
           uses: actions/github-script@0.9.0

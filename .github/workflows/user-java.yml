@@ -5,6 +5,7 @@ on:
     push:
      paths:
        - "apis/user-java/**"
+       - ".github/workflows/user-java.yml"
      branches: [dev]
   pull_request:
     branches: [main]
@@ -33,9 +34,7 @@ jobs:
       working-directory: apis/user-java
     
     - name: Publish to GitHub Packages Apache Maven
-      run: mvn clean deploy
-      env:
-        GITHUB_TOKEN: ${{ github.token }}
+      run: mvn clean package
       working-directory: apis/user-java
 
       # Credentials used to push image to App Service
