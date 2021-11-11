@@ -18,60 +18,63 @@ jobs:
 
     steps:
       - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
-      - uses: actions/checkout@v2
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v1
-        with:
-          dotnet-version: 3.1.x
-      - name: Restore dependencies
-        run: dotnet restore
-        working-directory: apis/poi/
-      - name: Build
-        run: dotnet build apis/poi/poi.sln --no-restore
-      - name: Test
-        run: dotnet test apis/poi/tests/UnitTests/UnitTests.csproj --no-build --verbosity normal
+      # - uses: actions/checkout@v2
+      # - name: Setup .NET
+      #   uses: actions/setup-dotnet@v1
+      #   with:
+      #     dotnet-version: 3.1.x
+      # - name: Restore dependencies
+      #   run: dotnet restore
+      #   working-directory: apis/poi/
+      # - name: Build
+      #   run: dotnet build apis/poi/poi.sln --no-restore
+      # - name: Test
+      #   run: dotnet test apis/poi/tests/UnitTests/UnitTests.csproj --no-build --verbosity normal
 
-        # Credentials used to push image to App Service
-      - name: "Login via Azure CLI"
-        uses: azure/login@v1
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+      #   # Credentials used to push image to App Service
+      # - name: "Login via Azure CLI"
+      #   uses: azure/login@v1
+      #   with:
+      #     creds: ${{ secrets.AZURE_CREDENTIALS }}
 
-        # Credentials used to push image to Container Repository
-      - name: "Build and push image"
-        uses: azure/docker-login@v1
-        with:
-          login-server: ${{ secrets.REGISTRY_LOGIN_SERVER }}
-          username: ${{ secrets.REGISTRY_USERNAME }}
-          password: ${{ secrets.REGISTRY_PASSWORD }}
-      - run: |
-          docker build apis/poi/web -f apis/poi/web/Dockerfile -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/devopsoh/api-poi:${{ github.sha }}
-          docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/devopsoh/api-poi:${{ github.sha }}
+      #   # Credentials used to push image to Container Repository
+      # - name: "Build and push image"
+      #   uses: azure/docker-login@v1
+      #   with:
+      #     login-server: ${{ secrets.REGISTRY_LOGIN_SERVER }}
+      #     username: ${{ secrets.REGISTRY_USERNAME }}
+      #     password: ${{ secrets.REGISTRY_PASSWORD }}
+      # - run: |
+      #     docker build apis/poi/web -f apis/poi/web/Dockerfile -t ${{ secrets.REGISTRY_LOGIN_SERVER }}/devopsoh/api-poi:${{ github.sha }}
+      #     docker push ${{ secrets.REGISTRY_LOGIN_SERVER }}/devopsoh/api-poi:${{ github.sha }}
 
-  poi-deploy-staging:
-      runs-on: ubuntu-latest
-      if: success() && github.ref == 'refs/heads/main'
-      needs: poi-build-and-test
+#   poi-deploy-staging:
+#       runs-on: ubuntu-latest
+#       if: success() && github.ref == 'refs/heads/main'
+# #      needs: poi-build-and-test
 
-      steps:
-      - name: "Login via Azure CLI"
-        uses: azure/login@v1
-        with:
-          creds: ${{ secrets.AZURE_CREDENTIALS }}
+#       steps:
+#       - name: "Login via Azure CLI"
+#         uses: azure/login@v1
+#         with:
+#           creds: ${{ secrets.AZURE_CREDENTIALS }}
       
-      - name: Azure WebApp deploy
-        uses: Azure/webapps-deploy@v2    
-        with:
-          # Name of the Azure Web App
-          app-name: openhack9tn92xf2poi 
-          # Enter an existing Slot other than the Production slot
-          slot-name: staging 
-          # Applies to Web App only: Path to package or folder. *.zip, *.war, *.jar or a folder to deploy
-          images: ${{ secrets.REGISTRY_LOGIN_SERVER }}/devopsoh/api-poi:${{ github.sha }}
-  poi-slot-swap:
+#       - name: Azure WebApp deploy
+#         uses: Azure/webapps-deploy@v2    
+#         with:
+#           # Name of the Azure Web App
+#           app-name: openhack9tn92xf2poi 
+#           # Enter an existing Slot other than the Production slot
+#           slot-name: staging 
+#           # Applies to Web App only: Path to package or folder. *.zip, *.war, *.jar or a folder to deploy
+#           images: ${{ secrets.REGISTRY_LOGIN_SERVER }}/devopsoh/api-poi:${{ github.sha }}
+  poi-route-traffic:
       runs-on: ubuntu-latest
+      strategy:
+        matrix:
+          traffic: [25, 50, 75, 100]
       if: success() && github.ref == 'refs/heads/main'
-      needs: poi-deploy-staging
+#      needs: poi-deploy-staging
       steps:
         - name: Check the deployed service URL
           uses: jtalk/url-health-check-action@v2
@@ -87,7 +90,7 @@ jobs:
             creds: ${{ secrets.AZURE_CREDENTIALS }}
         - name: "Route Traffic to Staging"
           run: |
-           az webapp traffic-routing set --distribution staging=50 --name ${{ secrets.POI_APP_NAME }} --resource-group ${{ secrets.RESOURCE_GROUP }}
+           az webapp traffic-routing set --distribution staging=${{ matrix.traffic }} --name ${{ secrets.POI_APP_NAME }} --resource-group ${{ secrets.RESOURCE_GROUP }}
 
         - name: Check the deployed service URL
           uses: jtalk/url-health-check-action@v2
@@ -102,6 +105,18 @@ jobs:
           run: |
             az webapp traffic-routing set --distribution staging=0 --name ${{ secrets.POI_APP_NAME }} --resource-group ${{ secrets.RESOURCE_GROUP }}
 
+  poi-swap-slot:
+      runs-on: ubuntu-latest
+      if: success() && github.ref == 'refs/heads/main'
+      needs: poi-route-traffic
+      steps:
+        - name: "Login via Azure CLI"
+          uses: azure/login@v1
+          with:
+            creds: ${{ secrets.AZURE_CREDENTIALS }}
+        - name: "Route Traffic to Staging"
+          run: |
+            az webapp deployment slot swap --name ${{ secrets.POI_APP_NAME }} --resource-group ${{ secrets.RESOURCE_GROUP }} --slot staging --target-slot production
 
         - name: Create Issue for failed workflow
           uses: actions/github-script@0.9.0
