@@ -35,8 +35,6 @@ jobs:
     
     - name: Publish to GitHub Packages Apache Maven
       run: mvn clean package
-      env:
-        GITHUB_TOKEN: ${{ github.token }}
       working-directory: apis/user-java
 
       # Credentials used to push image to App Service
